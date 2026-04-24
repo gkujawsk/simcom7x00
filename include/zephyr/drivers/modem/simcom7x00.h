@@ -127,6 +127,10 @@ int simcom7x00_get_rat_policy(const struct device *dev, struct simcom7x00_rat_po
 int simcom7x00_get_control_diagnostics(const struct device *dev,
 				       struct simcom7x00_control_diagnostics *diagnostics);
 
+int simcom7x00_get_serial_number(const struct device *dev, char *buf, size_t len);
+
+int simcom7x00_get_firmware_version(const struct device *dev, char *buf, size_t len);
+
 int simcom7x00_gnss_get_snapshot(const struct device *dev,
 				 struct simcom7x00_gnss_snapshot *snapshot);
 

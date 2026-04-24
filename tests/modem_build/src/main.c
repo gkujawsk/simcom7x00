@@ -16,6 +16,8 @@ int main(void)
 	enum simcom7x00_rat rat;
 	enum simcom7x00_rat_mode rat_mode;
 	char apn[32];
+	char serial[32];
+	char fw[80];
 	struct simcom7x00_operator op;
 	struct simcom7x00_network_status net_status;
 	struct simcom7x00_rat_policy rat_policy = {
@@ -50,6 +52,8 @@ int main(void)
 	(void)simcom7x00_set_rat_policy(modem, &rat_policy);
 	(void)simcom7x00_get_rat_policy(modem, &rat_policy);
 	(void)simcom7x00_get_control_diagnostics(modem, &diagnostics);
+	(void)simcom7x00_get_serial_number(modem, serial, sizeof(serial));
+	(void)simcom7x00_get_firmware_version(modem, fw, sizeof(fw));
 	(void)cellular_get_supported_networks(modem, &supported_networks, &supported_networks_size);
 	(void)cellular_configure_networks(modem, network_cfg, ARRAY_SIZE(network_cfg));
 

@@ -3354,6 +3354,24 @@ int simcom7x00_get_control_diagnostics(const struct device *dev,
 	return 0;
 }
 
+int simcom7x00_get_serial_number(const struct device *dev, char *buf, size_t len)
+{
+	if ((dev == NULL) || (buf == NULL) || (len == 0U)) {
+		return -EINVAL;
+	}
+
+	return modem_cellular_get_modem_info(dev, CELLULAR_MODEM_INFO_IMEI, buf, len);
+}
+
+int simcom7x00_get_firmware_version(const struct device *dev, char *buf, size_t len)
+{
+	if ((dev == NULL) || (buf == NULL) || (len == 0U)) {
+		return -EINVAL;
+	}
+
+	return modem_cellular_get_modem_info(dev, CELLULAR_MODEM_INFO_FW_VERSION, buf, len);
+}
+
 int simcom7x00_modem_ensure_ready(const struct device *dev, bool ppp_requested)
 {
 	struct modem_cellular_data *data;
