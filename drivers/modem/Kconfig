@@ -1,0 +1,69 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config MODEM_SIMCOM7X00
+	bool "SIMCOM SIM7500/SIM7600 modem driver"
+	depends on MODEM
+	depends on DT_HAS_SIMCOM_SIM7X00_ENABLED
+	select MODEM_MODULES
+	select MODEM_PPP
+	select MODEM_CMUX
+	select MODEM_CHAT
+	select MODEM_PIPE
+	select MODEM_PIPELINK
+	select MODEM_BACKEND_UART
+	select RING_BUFFER
+	select NET_L2_PPP_OPTION_MRU
+	select NET_L2_PPP_PAP
+	help
+	  Out-of-tree SIMCOM SIM7500/SIM7600 modem driver based on the modern
+	  cellular modem stack. The driver owns power sequencing, CMUX, PPP and
+	  exports a dedicated GNSS out-of-band channel for the companion GNSS
+	  driver.
+
+if MODEM_SIMCOM7X00
+
+config MODEM_SIMCOM7X00_APN
+	string "APN"
+	default "internet"
+
+config MODEM_SIMCOM7X00_DEFAULT_PPP_AUTOSTART
+	bool "Start PPP automatically after resume"
+	default y
+
+config MODEM_SIMCOM7X00_DEFAULT_MAX_RELIABILITY
+	bool "Use maximum reliability radio defaults"
+	default y
+	help
+	  Apply a conservative default radio profile intended for field bring-up
+	  and maximum link robustness:
+	  - keep UART sleep disabled
+	  - enable +CNSMOD auto reporting
+	  - prefer LTE, then WCDMA, then GSM acquisition order
+	  This does not configure operator-specific bands and cannot control
+	  antenna diversity, which remains a hardware integration concern.
+
+config MODEM_SIMCOM7X00_PERIODIC_SCRIPT_MS
+	int "Periodic script interval in milliseconds"
+	default 2000
+
+config MODEM_SIMCOM7X00_UART_BUFFER_SIZES
+	int "The UART receive and transmit buffer sizes in bytes"
+	default 512
+
+config MODEM_SIMCOM7X00_CMUX_MAX_FRAME_SIZE
+	int "The maximum CMUX frame size in bytes"
+	default 128
+
+config MODEM_SIMCOM7X00_CHAT_BUFFER_SIZES
+	int "The size of the chat buffers in bytes"
+	default 128
+
+config MODEM_SIMCOM7X00_USER_PIPE_BUFFER_SIZES
+	int "The size of each exported user pipe buffer in bytes"
+	default 128
+
+module = MODEM_SIMCOM7X00
+module-str = SIMCOM7X00 modem
+source "subsys/logging/Kconfig.template.log_config"
+
+endif

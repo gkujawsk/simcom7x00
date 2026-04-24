@@ -1,0 +1,13 @@
+&uart1 {
+	modem: modem {
+		compatible = "simcom,sim7x00";
+		status = "okay";
+		mdm-power-gpios = <&gpio0 10 0>;
+		mdm-reset-gpios = <&gpio0 11 0>;
+
+		gnss {
+			compatible = "simcom,sim7x00-gnss";
+			status = "okay";
+		};
+	};
+};

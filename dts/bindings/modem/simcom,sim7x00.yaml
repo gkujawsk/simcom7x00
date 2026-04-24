@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: Apache-2.0
+
+description: SIMCOM SIM7500/SIM7600 modem
+
+compatible: "simcom,sim7x00"
+
+include: uart-device.yaml
+
+properties:
+  mdm-power-gpios:
+    type: phandle-array
+    required: true
+
+  mdm-reset-gpios:
+    type: phandle-array

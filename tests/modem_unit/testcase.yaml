@@ -1,0 +1,5 @@
+common:
+  platform_allow:
+    - qemu_x86
+tests:
+  simcom7x00.modem_unit: {}

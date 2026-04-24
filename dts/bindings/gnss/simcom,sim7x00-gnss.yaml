@@ -1,0 +1,9 @@
+# SPDX-License-Identifier: Apache-2.0
+
+description: |
+  GNSS companion device for the SIMCOM SIM7500/SIM7600 modem family.
+
+  The GNSS node is expected to be a child of a `simcom,sim7x00` modem node and
+  uses the parent's dedicated GNSS CMUX side channel.
+
+compatible: "simcom,sim7x00-gnss"

@@ -1,0 +1,4 @@
+# SPDX-License-Identifier: Apache-2.0
+
+rsource "modem/Kconfig"
+rsource "gnss/Kconfig"

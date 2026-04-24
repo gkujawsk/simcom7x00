@@ -1,0 +1,32 @@
+# SPDX-License-Identifier: Apache-2.0
+
+config GNSS_SIMCOM7X00
+	bool "SIMCOM SIM7500/SIM7600 GNSS driver"
+	depends on GNSS
+	depends on DT_HAS_SIMCOM_SIM7X00_GNSS_ENABLED
+	select MODEM_MODULES
+	select MODEM_CHAT
+	select MODEM_PIPELINK
+	select GNSS_PARSE
+	select GNSS_NMEA0183
+	select GNSS_NMEA0183_MATCH
+	help
+	  GNSS companion driver for the SIMCOM SIM7500/SIM7600 modem family. The
+	  driver attaches to the modem-exported GNSS side channel and publishes
+	  fixes through Zephyr's GNSS API.
+
+if GNSS_SIMCOM7X00
+
+config GNSS_SIMCOM7X00_SATELLITES_COUNT
+	int "Maximum satellite count"
+	depends on GNSS_SATELLITES
+	default 24
+	help
+	  Maximum number of satellites retained for the optional satellites
+	  callback.
+
+module = GNSS_SIMCOM7X00
+module-str = SIMCOM7X00 GNSS
+source "subsys/logging/Kconfig.template.log_config"
+
+endif

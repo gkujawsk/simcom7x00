@@ -1,0 +1,8 @@
+sample:
+  description: SIMCOM SIM7x00 modem with GNSS side channel
+  name: simcom7x00
+tests:
+  sample.simcom7x00.build:
+    build_only: true
+    platform_allow:
+      - qemu_x86
