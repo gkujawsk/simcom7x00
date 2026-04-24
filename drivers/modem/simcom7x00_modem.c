@@ -153,6 +153,8 @@ struct modem_cellular_data {
 	char operator_short[MODEM_CELLULAR_DATA_OPERATOR_SHORT_LEN + 1];
 	char operator_plmn[MODEM_CELLULAR_DATA_OPERATOR_PLMN_LEN + 1];
 	enum simcom7x00_rat current_rat;
+	enum simcom7x00_sim_state sim_state;
+	enum simcom7x00_sim_presence sim_presence;
 	enum cellular_registration_status current_registration_status;
 	bool roaming;
 	bool operator_valid;
@@ -1079,6 +1081,56 @@ static void modem_cellular_chat_on_cgmr(struct modem_chat *chat, char **argv, ui
 	strncpy(data->fw_version, argv[1], sizeof(data->fw_version) - 1);
 }
 
+static enum simcom7x00_sim_presence
+modem_cellular_sim_presence_from_state(enum simcom7x00_sim_state state)
+{
+	switch (state) {
+	case SIMCOM7X00_SIM_STATE_NOT_PRESENT:
+		return SIMCOM7X00_SIM_PRESENCE_NOT_PRESENT;
+	case SIMCOM7X00_SIM_STATE_READY:
+	case SIMCOM7X00_SIM_STATE_SIM_PIN:
+	case SIMCOM7X00_SIM_STATE_SIM_PUK:
+	case SIMCOM7X00_SIM_STATE_PH_SIM_PIN:
+	case SIMCOM7X00_SIM_STATE_PH_NET_PIN:
+	case SIMCOM7X00_SIM_STATE_PH_NET_PUK:
+		return SIMCOM7X00_SIM_PRESENCE_PRESENT;
+	default:
+		return SIMCOM7X00_SIM_PRESENCE_UNKNOWN;
+	}
+}
+
+static void modem_cellular_chat_on_cpin(struct modem_chat *chat, char **argv, uint16_t argc,
+					void *user_data)
+{
+	struct modem_cellular_data *data = (struct modem_cellular_data *)user_data;
+	enum simcom7x00_sim_state state = SIMCOM7X00_SIM_STATE_UNKNOWN;
+
+	ARG_UNUSED(chat);
+
+	if (argc != 2) {
+		return;
+	}
+
+	if (strcmp(argv[1], "NOT INSERTED") == 0) {
+		state = SIMCOM7X00_SIM_STATE_NOT_PRESENT;
+	} else if (strcmp(argv[1], "READY") == 0) {
+		state = SIMCOM7X00_SIM_STATE_READY;
+	} else if (strcmp(argv[1], "SIM PIN") == 0) {
+		state = SIMCOM7X00_SIM_STATE_SIM_PIN;
+	} else if (strcmp(argv[1], "SIM PUK") == 0) {
+		state = SIMCOM7X00_SIM_STATE_SIM_PUK;
+	} else if (strcmp(argv[1], "PH-SIM PIN") == 0) {
+		state = SIMCOM7X00_SIM_STATE_PH_SIM_PIN;
+	} else if (strcmp(argv[1], "PH-NET PIN") == 0) {
+		state = SIMCOM7X00_SIM_STATE_PH_NET_PIN;
+	} else if (strcmp(argv[1], "PH-NET PUK") == 0) {
+		state = SIMCOM7X00_SIM_STATE_PH_NET_PUK;
+	}
+
+	data->sim_state = state;
+	data->sim_presence = modem_cellular_sim_presence_from_state(state);
+}
+
 static void modem_cellular_chat_on_csq(struct modem_chat *chat, char **argv, uint16_t argc,
 				       void *user_data)
 {
@@ -1333,6 +1385,7 @@ MODEM_CHAT_MATCH_DEFINE(iccid_match __maybe_unused, "+ICCID: ", "", modem_cellul
 MODEM_CHAT_MATCH_DEFINE(cimi_match __maybe_unused, "", "", modem_cellular_chat_on_imsi);
 MODEM_CHAT_MATCH_DEFINE(cgmi_match __maybe_unused, "", "", modem_cellular_chat_on_cgmi);
 MODEM_CHAT_MATCH_DEFINE(cgmr_match __maybe_unused, "", "", modem_cellular_chat_on_cgmr);
+MODEM_CHAT_MATCH_DEFINE(cpin_match, "+CPIN: ", "", modem_cellular_chat_on_cpin);
 MODEM_CHAT_MATCH_DEFINE(copn_match, "+COPN: ", ",", modem_cellular_chat_on_copn);
 MODEM_CHAT_MATCH_DEFINE(cpsi_match, "+CPSI: ", ",", modem_cellular_chat_on_cpsi);
 MODEM_CHAT_MATCH_DEFINE(cnmp_match, "+CNMP: ", "", modem_cellular_chat_on_cnmp);
@@ -1537,6 +1590,14 @@ MODEM_CHAT_SCRIPT_CMDS_DEFINE(simcom7x00_rat_readback_chat_script_cmds,
 MODEM_CHAT_SCRIPT_DEFINE(simcom7x00_rat_readback_chat_script,
 			 simcom7x00_rat_readback_chat_script_cmds, abort_matches,
 			 modem_cellular_chat_callback_handler, 5);
+
+MODEM_CHAT_SCRIPT_CMDS_DEFINE(simcom7x00_sim_presence_chat_script_cmds,
+			      MODEM_CHAT_SCRIPT_CMD_RESP("AT+CPIN?", cpin_match),
+			      MODEM_CHAT_SCRIPT_CMD_RESP("", ok_match));
+
+MODEM_CHAT_SCRIPT_DEFINE(simcom7x00_sim_presence_chat_script,
+			 simcom7x00_sim_presence_chat_script_cmds, abort_matches,
+			 modem_cellular_chat_callback_handler, 2);
 
 static int modem_cellular_refresh_operator(struct modem_cellular_data *data)
 {
@@ -3372,6 +3433,49 @@ int simcom7x00_get_firmware_version(const struct device *dev, char *buf, size_t 
 	return modem_cellular_get_modem_info(dev, CELLULAR_MODEM_INFO_FW_VERSION, buf, len);
 }
 
+int simcom7x00_get_sim_state(const struct device *dev, enum simcom7x00_sim_state *state)
+{
+	struct modem_cellular_data *data;
+	int ret;
+
+	if ((dev == NULL) || (state == NULL)) {
+		return -EINVAL;
+	}
+
+	data = dev->data;
+	if (!modem_cellular_state_is_ready(data->state)) {
+		return -ENODATA;
+	}
+
+	data->sim_state = SIMCOM7X00_SIM_STATE_UNKNOWN;
+	data->sim_presence = SIMCOM7X00_SIM_PRESENCE_UNKNOWN;
+	ret = modem_cellular_run_script_locked(data, &simcom7x00_sim_presence_chat_script);
+	if (ret < 0) {
+		return ret;
+	}
+
+	*state = data->sim_state;
+	return 0;
+}
+
+int simcom7x00_get_sim_presence(const struct device *dev, enum simcom7x00_sim_presence *presence)
+{
+	int ret;
+	enum simcom7x00_sim_state state;
+
+	if ((dev == NULL) || (presence == NULL)) {
+		return -EINVAL;
+	}
+
+	ret = simcom7x00_get_sim_state(dev, &state);
+	if (ret < 0) {
+		return ret;
+	}
+
+	*presence = modem_cellular_sim_presence_from_state(state);
+	return 0;
+}
+
 int simcom7x00_modem_ensure_ready(const struct device *dev, bool ppp_requested)
 {
 	struct modem_cellular_data *data;
@@ -3630,6 +3734,8 @@ static int modem_cellular_init(const struct device *dev)
 	data->ppp_requested = false;
 	data->force_ready_only_on_resume = false;
 	data->current_rat = SIMCOM7X00_RAT_UNKNOWN;
+	data->sim_state = SIMCOM7X00_SIM_STATE_UNKNOWN;
+	data->sim_presence = SIMCOM7X00_SIM_PRESENCE_UNKNOWN;
 	data->current_registration_status = CELLULAR_REGISTRATION_UNKNOWN;
 	data->roaming = false;
 	data->operator_valid = false;

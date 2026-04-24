@@ -32,6 +32,23 @@ enum simcom7x00_ppp_state {
 	SIMCOM7X00_PPP_STATE_CONNECTED,
 };
 
+enum simcom7x00_sim_presence {
+	SIMCOM7X00_SIM_PRESENCE_UNKNOWN = 0,
+	SIMCOM7X00_SIM_PRESENCE_NOT_PRESENT,
+	SIMCOM7X00_SIM_PRESENCE_PRESENT,
+};
+
+enum simcom7x00_sim_state {
+	SIMCOM7X00_SIM_STATE_UNKNOWN = 0,
+	SIMCOM7X00_SIM_STATE_NOT_PRESENT,
+	SIMCOM7X00_SIM_STATE_READY,
+	SIMCOM7X00_SIM_STATE_SIM_PIN,
+	SIMCOM7X00_SIM_STATE_SIM_PUK,
+	SIMCOM7X00_SIM_STATE_PH_SIM_PIN,
+	SIMCOM7X00_SIM_STATE_PH_NET_PIN,
+	SIMCOM7X00_SIM_STATE_PH_NET_PUK,
+};
+
 enum simcom7x00_rat {
 	SIMCOM7X00_RAT_UNKNOWN = 0,
 	SIMCOM7X00_RAT_GSM,
@@ -130,6 +147,11 @@ int simcom7x00_get_control_diagnostics(const struct device *dev,
 int simcom7x00_get_serial_number(const struct device *dev, char *buf, size_t len);
 
 int simcom7x00_get_firmware_version(const struct device *dev, char *buf, size_t len);
+
+int simcom7x00_get_sim_state(const struct device *dev, enum simcom7x00_sim_state *state);
+
+int simcom7x00_get_sim_presence(const struct device *dev,
+				enum simcom7x00_sim_presence *presence);
 
 int simcom7x00_gnss_get_snapshot(const struct device *dev,
 				 struct simcom7x00_gnss_snapshot *snapshot);

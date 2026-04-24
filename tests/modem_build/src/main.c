@@ -13,6 +13,8 @@ int main(void)
 	const struct device *modem = DEVICE_DT_GET(DT_PATH(test, uart_55556666, modem));
 	uint32_t interval_ms;
 	enum simcom7x00_ppp_state ppp_state;
+	enum simcom7x00_sim_state sim_state;
+	enum simcom7x00_sim_presence sim_presence;
 	enum simcom7x00_rat rat;
 	enum simcom7x00_rat_mode rat_mode;
 	char apn[32];
@@ -54,6 +56,8 @@ int main(void)
 	(void)simcom7x00_get_control_diagnostics(modem, &diagnostics);
 	(void)simcom7x00_get_serial_number(modem, serial, sizeof(serial));
 	(void)simcom7x00_get_firmware_version(modem, fw, sizeof(fw));
+	(void)simcom7x00_get_sim_state(modem, &sim_state);
+	(void)simcom7x00_get_sim_presence(modem, &sim_presence);
 	(void)cellular_get_supported_networks(modem, &supported_networks, &supported_networks_size);
 	(void)cellular_configure_networks(modem, network_cfg, ARRAY_SIZE(network_cfg));
 
